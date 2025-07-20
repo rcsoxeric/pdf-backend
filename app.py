@@ -7,6 +7,7 @@ import io
 import os
 import subprocess
 import uuid
+import tempfile   # <-- Import añadido aquí
 
 app = Flask(__name__)
 CORS(app)  # Permitir CORS para que tu frontend JS pueda llamar
@@ -29,7 +30,7 @@ def jpg_to_pdf():
             img_path = tmp_img.name
         try:
             pdf.image(img_path, 0, 0, width, height)
-            # ¡Aquí va el fix!
+            # Solución para obtener el PDF como bytes
             pdf_bytes = pdf.output(dest='S').encode('latin1')
             output = io.BytesIO(pdf_bytes)
             output.seek(0)
@@ -38,7 +39,6 @@ def jpg_to_pdf():
         return send_file(output, download_name="imagen_a_pdf.pdf", as_attachment=True)
     except Exception as e:
         return f"Error al convertir JPG a PDF: {e}", 500
-
 
 # 2. Unir PDFs
 @app.route('/merge_pdf', methods=['POST'])
