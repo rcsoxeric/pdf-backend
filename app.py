@@ -12,6 +12,8 @@ app = Flask(__name__)
 CORS(app)  # Permitir CORS para que tu frontend JS pueda llamar
 
 # 1. JPG/PNG a PDF
+import tempfile
+
 @app.route('/jpg_to_pdf', methods=['POST'])
 def jpg_to_pdf():
     try:
@@ -23,13 +25,18 @@ def jpg_to_pdf():
         width, height = img.size
         pdf = FPDF(unit='pt', format=[width, height])
         pdf.add_page()
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='JPEG')
-        img_byte_arr.seek(0)
-        pdf.image(img_byte_arr, 0, 0, width, height)
-        output = io.BytesIO()
-        pdf.output(output)
-        output.seek(0)
+        # Guardar imagen temporalmente
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_img:
+            img.save(tmp_img, format='JPEG')
+            img_path = tmp_img.name
+        try:
+            pdf.image(img_path, 0, 0, width, height)
+            output = io.BytesIO()
+            pdf.output(output)
+            output.seek(0)
+        finally:
+            # Elimina el archivo temporal
+            os.remove(img_path)
         return send_file(output, download_name="imagen_a_pdf.pdf", as_attachment=True)
     except Exception as e:
         return f"Error al convertir JPG a PDF: {e}", 500
