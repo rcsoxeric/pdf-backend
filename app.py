@@ -14,25 +14,28 @@ CORS(app)  # Permitir CORS para que tu frontend JS pueda llamar
 # 1. JPG/PNG a PDF
 @app.route('/jpg_to_pdf', methods=['POST'])
 def jpg_to_pdf():
-    files = request.files.getlist('files')
-    if not files:
-        return "No se enviaron imágenes", 400
-    pdf = FPDF(unit='pt')
-    images = []
-    # Convertimos todas a RGB y almacenamos en memoria
-    for f in files:
-        img = Image.open(f.stream).convert('RGB')
-        images.append(img)
-        width, height = img.size
-        pdf.add_page(format=(width, height))
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='JPEG')
-        img_byte_arr.seek(0)
-        pdf.image(img_byte_arr, 0, 0, width, height)
-    output = io.BytesIO()
-    pdf.output(output)
-    output.seek(0)
-    return send_file(output, download_name="imagenes_a_pdf.pdf", as_attachment=True)
+    try:
+        files = request.files.getlist('files')
+        if not files:
+            return "No se enviaron imágenes", 400
+        pdf = FPDF(unit='pt')
+        for f in files:
+            # Mensaje para depuración (no visible sin logs, pero útil en local)
+            print(f"Procesando archivo: {f.filename}")
+            img = Image.open(f.stream).convert('RGB')
+            width, height = img.size
+            pdf.add_page(format=(width, height))
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='JPEG')
+            img_byte_arr.seek(0)
+            pdf.image(img_byte_arr, 0, 0, width, height)
+        output = io.BytesIO()
+        pdf.output(output)
+        output.seek(0)
+        return send_file(output, download_name="imagenes_a_pdf.pdf", as_attachment=True)
+    except Exception as e:
+        # Devuelve el error exacto para que lo veas en la web/postman
+        return f"Error al convertir JPG a PDF: {e}", 500
 
 # 2. Unir PDFs
 @app.route('/merge_pdf', methods=['POST'])
