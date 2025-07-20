@@ -12,8 +12,6 @@ app = Flask(__name__)
 CORS(app)  # Permitir CORS para que tu frontend JS pueda llamar
 
 # 1. JPG/PNG a PDF
-import tempfile
-
 @app.route('/jpg_to_pdf', methods=['POST'])
 def jpg_to_pdf():
     try:
@@ -31,15 +29,16 @@ def jpg_to_pdf():
             img_path = tmp_img.name
         try:
             pdf.image(img_path, 0, 0, width, height)
-            output = io.BytesIO()
-            pdf.output(output)
+            # ¡Aquí va el fix!
+            pdf_bytes = pdf.output(dest='S').encode('latin1')
+            output = io.BytesIO(pdf_bytes)
             output.seek(0)
         finally:
-            # Elimina el archivo temporal
             os.remove(img_path)
         return send_file(output, download_name="imagen_a_pdf.pdf", as_attachment=True)
     except Exception as e:
         return f"Error al convertir JPG a PDF: {e}", 500
+
 
 # 2. Unir PDFs
 @app.route('/merge_pdf', methods=['POST'])
